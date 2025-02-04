@@ -1,0 +1,64 @@
+<div class="row" *ngIf="ItemsList.length === 0">
+  <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+    <ngx-skeleton-loader [count]="4" [theme]="{ 
+      'border-radius': '5px',
+      width:'100%',
+      height: '200px',
+      'background-color': '#f1f4f3',
+      border: '1px solid white'
+    }"></ngx-skeleton-loader>
+  </div>
+</div>
+
+<section class="content-flex">
+
+  <div class="d-flex justify-content-end">
+      <button mat-flat-button>Nuevo usuario</button>
+  </div>
+  
+  <section class="row" *ngIf="ItemsList.length > 0; else noData">
+      <ng-container *ngFor="let user of ItemsList">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+            <mat-card>
+              <div class="card-content">
+                <div class="card-content-menu">
+                  <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Example icon-button with a menu">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="openEditDialog(user)">
+                      <mat-icon>edit</mat-icon>
+                      <span>Editar</span>
+                    </button>
+                    <button mat-menu-item (click)="deleteUser(user.id)">
+                      <mat-icon>delete</mat-icon>
+                      <span>Eliminar</span>
+                    </button>
+                  </mat-menu>                
+                </div>
+                <div class="d-flex justify-content-center py-4">
+                  <img [src]=user.avatar alt="Photo of user">
+                </div>
+                <mat-card-content>
+                  <label class="card-content-title">{{user.first_name}} {{user.last_name}}</label>
+                  <span class="mt-3 card-content-email">{{user.email}}</span>
+                </mat-card-content>
+              </div>
+            </mat-card>          
+        </div>
+      </ng-container>
+  </section>
+  
+  <mat-paginator
+    [length]="totalItems" 
+    [pageSize]="pageSize" 
+    [pageSizeOptions]="[6, 8, 12]" 
+    [pageIndex]="currentPage - 1"
+    (page)="onPageChange($event)">
+  </mat-paginator>
+
+</section>
+
+<ng-template #noData>
+    <p class="text-center">No hay usuarios disponibles.</p>
+</ng-template>
