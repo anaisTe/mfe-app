@@ -17,3 +17,10 @@ export interface IUser {
   last_name: string,
   avatar: string,
 }
+
+export interface IUserDialog {
+  dialogHeader?: string;
+  cancelButtonLabel?: string;
+  confirmButtonLabel?: string;
+  dataForm?: IUser;
+}

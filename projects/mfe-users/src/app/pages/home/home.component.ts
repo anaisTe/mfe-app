@@ -12,6 +12,7 @@ import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { EditUserComponent } from '../../components/dialog/edit-user/edit-user.component';
 import { SweetAlert2Module } from '@sweetalert2/ngx-sweetalert2';
 import Swal from 'sweetalert2';
+import { Subscription, take } from 'rxjs';
 
 @Component({
   selector: 'app-mfe-users-home',
@@ -31,9 +32,9 @@ import Swal from 'sweetalert2';
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeMfeComponent implements OnInit {
-  private _showUserList = inject(UsersService);
+export class HomeMfeComponent implements OnInit, OnDestroy {
   ItemsList: IUser[] = [];
+  userListBd!: Subscription;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   currentPage:number = 1; //pagination
@@ -41,7 +42,10 @@ export class HomeMfeComponent implements OnInit {
   totalPages:number = 1; //pagination
   pageSize:number = 6; //pagination
 
-  readonly dialog = inject(MatDialog);
+  constructor(
+    public dialog: MatDialog,
+    private _showUserList: UsersService
+  ) { }
 
   ngOnInit() {
     this.loadPageUser(this.currentPage);
@@ -51,21 +55,19 @@ export class HomeMfeComponent implements OnInit {
     });
   }
 
-
   loadPageUser(page:number) {
-    this._showUserList.getUsers(page, this.pageSize).subscribe({
+    this.userListBd = this._showUserList.getUsers(page, this.pageSize)
+    .subscribe({
       next: (res) => {
         this.ItemsList = res.data;
         this.totalItems = res.total;
         this.totalPages = res.total_pages;
-        console.log('users:', this.ItemsList);
         if (this.paginator) {
           this.paginator.pageIndex = page - 1;
         }
       },
       error:(err) => {
         console.warn(err);
-        
       }
     })
   }
@@ -77,23 +79,42 @@ export class HomeMfeComponent implements OnInit {
     this.loadPageUser(this.currentPage);
   }
 
-
-  openEditDialog(user: IUser) {
-    const dialogRef = this.dialog.open(EditUserComponent, {
+  newUserDialog() {
+    this.dialog.open(EditUserComponent, {
       data: {
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email
+        dialogHeader: 'Nuevo usuario',
+        cancelButtonLabel: 'Cancelar', 
+        confirmButtonLabel: 'Guardar'
+      }
+    }).afterClosed().pipe(take(1)).subscribe({
+        next: (value) => {
+          value.id = this.ItemsList.map(ele => ele.id + 1 ).pop();
+            
+          this.ItemsList = [...this.ItemsList, value];
+
+          this.totalItems++;
+        }
+      })
+  }
+
+  openEditDialog(editingUser: IUser) {
+    this.dialog.open(EditUserComponent, {
+      data: {
+        dialogHeader: 'Editar alumno',
+        cancelButtonLabel: 'Cancelar', 
+        confirmButtonLabel: 'Actualizar',
+        dataForm: editingUser
       },
       width:'450px'
-    });
-
-    dialogRef.afterClosed().subscribe(updatedUser => {
-    if (updatedUser) {
-        // Actualizar la lista de usuarios localmente en el servicio
-        this._showUserList.setUsers(this.ItemsList.map(u => u.id === updatedUser.id ? updatedUser : u));
-      }
-    });
+    }).afterClosed().subscribe({
+      next: (res) => {
+          if(editingUser) {
+            this.ItemsList = this.ItemsList.map( ele =>
+              ele.id === editingUser.id ? { ...ele, ...res } : ele
+            );
+          }
+        }
+      });
   }
 
   deleteUser(id: number) {
@@ -118,10 +139,13 @@ export class HomeMfeComponent implements OnInit {
         });
         
         this.ItemsList = this.ItemsList.filter( ele => ele.id != id);
+        this.totalItems--;
       }
     })
 
   }
 
-
+  ngOnDestroy(): void {
+    this.userListBd.unsubscribe();
+  }
 }

@@ -1,71 +1,95 @@
-import { Component, inject, model } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import { IUser } from '../../../core/models/users.interface';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import {MatInputModule} from '@angular/material/input';
+import { Component, Inject } from '@angular/core';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { IUser, IUserDialog } from '../../../core/models/users.interface';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { UsersService } from '../../../core/services/users.service';
+import { FormFieldValidationErrorsPipe } from '../../../pipes/form-validation-error.pipe';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-mfe-users-edit-user',
   standalone: true,
-  imports: [MatDialogModule, MatFormFieldModule, MatInputModule, FormsModule, ReactiveFormsModule, MatButtonModule, CommonModule],
+  imports: [
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatButtonModule,
+    CommonModule,
+    FormFieldValidationErrorsPipe,
+  ],
   templateUrl: './edit-user.component.html',
-  styleUrl: './edit-user.component.scss'
+  styleUrl: './edit-user.component.scss',
 })
 export class EditUserComponent {
-  readonly dialogRef = inject(MatDialogRef<EditUserComponent>);
-  readonly data = inject<IUser>(MAT_DIALOG_DATA);
-  userForm: FormGroup;
-
   constructor(
-    private fb: FormBuilder, 
-    private _updateUser: UsersService
+    private matDialogRef: MatDialogRef<EditUserComponent>,
+    @Inject(MAT_DIALOG_DATA) public data?: IUserDialog
   ) {
-    this.userForm = this.fb.group({
-      first_name: [this.data.first_name, Validators.required],
-      last_name: [this.data.last_name, Validators.required],
-      email: [this.data.email, [Validators.required, Validators.email]],
-    });
+    matDialogRef.disableClose = true;
+
+    if (this.data?.dataForm) {
+      this.userForm.patchValue(this.data?.dataForm);
+    }
   }
 
-  get first_name() {
+  userForm = new FormGroup({
+    first_name: new FormControl('', [
+      Validators.required,
+      Validators.pattern('^[a-zA-ZÁÉÍÓÚáéíóúñÑ]+$'),
+    ]),
+    last_name: new FormControl('', [
+      Validators.required,
+      Validators.pattern('^[a-zA-ZÁÉÍÓÚáéíóúñÑ]+$'),
+    ]),
+    email: new FormControl('', [
+      Validators.required,
+      Validators.email,
+      Validators.pattern('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}'),
+    ])
+  });
+
+  get firstNameControl() {
     return this.userForm.get('first_name');
   }
 
-  get last_name() {
+  get lastNameControl() {
     return this.userForm.get('last_name');
   }
 
-  get email() {
+  get emailControl() {
     return this.userForm.get('email');
   }
 
-  getErrorMessage() {
-    if (this.email?.hasError('required')) {
-      return 'You must enter an email';
-    }
-    return this.email?.hasError('email') ? 'El correo ingresado no es valido' : '';
-  }
 
   update() {
-    if (this.userForm.valid) {
-      const updatedUser: IUser = this.userForm.value;
-      this._updateUser.updateUser(this.data.id, updatedUser).subscribe({
-        next: (result) => {
-          console.log('Usuario actualizado:', result);
-          this.dialogRef.close(updatedUser);
-        },
-        error: (err) => {
-          console.error('Error al actualizar el usuario:', err);
-        }
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+    }
+     else {
+      this.matDialogRef.close(this.userForm.value);
+
+      Swal.fire({
+        title: 'Guardado',
+        icon: 'success',
+        confirmButtonColor: '#006a6a',
+        confirmButtonText: 'Aceptar',
       });
     }
-  }
-
-  onNoClick(): void {
-    this.dialogRef.close();
   }
 }

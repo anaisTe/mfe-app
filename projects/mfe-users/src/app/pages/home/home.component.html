@@ -13,7 +13,7 @@
 <section class="content-flex">
 
   <div class="d-flex justify-content-end">
-      <button mat-flat-button>Nuevo usuario</button>
+      <button mat-flat-button (click)="newUserDialog()">Nuevo usuario</button>
   </div>
   
   <section class="row" *ngIf="ItemsList.length > 0; else noData">

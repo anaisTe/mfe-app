@@ -1,0 +1,22 @@
+.container-home {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+    margin: auto;
+
+    h1 {
+        font-weight: 200;
+        span {
+            font-weight: 400;
+        }
+    }
+    img {
+        margin: auto;
+    }
+
+    button {
+        width: 20%;
+    }
+}
